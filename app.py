@@ -3,7 +3,7 @@ import random
 from datetime import datetime
 
 import requests
-API_URL = "https://script.google.com/macros/s/AKfycbwWEUgvzrX13t_HRvd4WzfhYGYAYlgoK0_qDTw0OD9cqLlHKe7n4SlYv-Z6Qf_QNXJO/exec"
+API_URL = "https://script.google.com/macros/s/AKfycbz8EDZ6Oif1SH0kVxAwjJQR7u_I0kj0ODjY7oxTzN_Cf79urVBRODxjGdiYy1GS67-j/exec"
 
 st.set_page_config(page_title="Princess Arcade 💖", page_icon="👑", layout="centered")
 
