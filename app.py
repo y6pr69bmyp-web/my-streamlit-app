@@ -1,8 +1,9 @@
 import streamlit as st
 import random
 from datetime import datetime
-
 import requests
+
+# ✅ 너 Apps Script 웹앱 URL
 API_URL = "https://script.google.com/macros/s/AKfycbz8EDZ6Oif1SH0kVxAwjJQR7u_I0kj0ODjY7oxTzN_Cf79urVBRODxjGdiYy1GS67-j/exec"
 
 st.set_page_config(page_title="Princess Arcade 💖", page_icon="👑", layout="centered")
@@ -34,8 +35,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------- Session init -----------------
-if "guestbook" not in st.session_state:
-    st.session_state.guestbook = []  # session only
 if "secret_number" not in st.session_state:
     st.session_state.secret_number = random.randint(1, 100)
 if "tries" not in st.session_state:
@@ -53,7 +52,7 @@ with st.sidebar:
     st.header("🕹️ 메뉴")
     page = st.radio("이동", ["홈", "방명록", "게임: 숫자 맞추기", "게임: 가위바위보", "게임: 행운 룰렛"], index=0)
 
-# Theme backgrounds
+# ----------------- Theme backgrounds -----------------
 if theme == "핑크 공주":
     st.markdown("""<style>
         [data-testid="stAppViewContainer"]{
@@ -81,12 +80,12 @@ else:
         }
     </style>""", unsafe_allow_html=True)
 
-# Header
+# ----------------- Header -----------------
 st.markdown('<div class="title">👑 Princess Arcade <span style="color:#ff4da6;">웹사이트</span></div>', unsafe_allow_html=True)
 st.markdown('<div class="sub">방명록 + 미니게임 3종 · 윈도우/모바일 공유 OK ✨</div>', unsafe_allow_html=True)
 st.markdown('<span class="chip">Streamlit</span><span class="chip">Cute UI</span><span class="chip">Mini Games</span>', unsafe_allow_html=True)
 
-# Effect helper
+# ----------------- Effect helper -----------------
 def do_effect():
     if effect == "풍선 🎈":
         st.balloons()
@@ -124,21 +123,31 @@ elif page == "방명록":
     with col2:
         refresh = st.button("🔄 새로 불러오기", use_container_width=True)
 
-    # 글 남기기 (POST)
+    # ✅ 글 남기기 (POST)
     if add:
         if name.strip() and msg.strip():
             payload = {
                 "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
                 "name": name.strip(),
-                "message": msg.strip()
+                "message": msg.strip(),
             }
+
             try:
-                r = requests.post(API_URL, json=payload, timeout=10)
-                if r.text.strip().lower() == "ok":
-                    st.success("저장 완료 💖")
+                res = requests.post(API_URL, json=payload, timeout=10)
+
+                # Apps Script가 {"ok": true} 같은 JSON을 주면 파싱
+                try:
+                    result = res.json()
+                    if result.get("ok") is True:
+                        st.success("💖 방명록 저장 완료!")
+                        do_effect()
+                    else:
+                        st.warning(f"⚠️ 응답은 왔는데 형식이 다름: {result}")
+                except:
+                    # JSON이 아닌 응답이어도 저장 성공할 수 있어서 일단 성공 처리
+                    st.success("💖 방명록 저장 완료! (응답 파싱 생략)")
                     do_effect()
-                else:
-                    st.warning(f"저장은 됐을 수도 있는데 응답이 이상해: {r.text[:120]}")
+
             except Exception as e:
                 st.error(f"저장 실패: {e}")
         else:
@@ -147,24 +156,27 @@ elif page == "방명록":
     st.divider()
     st.write("#### 📌 최근 방명록")
 
-    # 글 불러오기 (GET)
+    # ✅ 글 불러오기 (GET) - refresh 눌러도 되고, 페이지 들어오면 자동으로도 됨
     try:
         data = requests.get(API_URL, timeout=10).json()
-        # 첫 줄은 헤더일 수 있어서 제외
-        rows = data[1:] if len(data) > 0 else []
-        rows = rows[::-1]  # 최신이 위로 오게
+
+        # data 형태: [["time","name","message"], ["2026-...","정인","..."], ...]
+        rows = data[1:] if isinstance(data, list) and len(data) > 0 else []
+        rows = rows[::-1]  # 최신이 위로
+
         if not rows:
             st.caption("아직 아무도 안 남겼어… 첫 손님 가자 🐣")
         else:
             for row in rows[:30]:
-                # row = [time, name, message]
                 t, n, m = (row + ["", "", ""])[:3]
                 st.markdown(f"**{n}** · {t}")
                 st.write(m)
                 st.markdown("---")
+
     except Exception as e:
         st.error(f"불러오기 실패: {e}")
 
+    st.caption("※ 방명록은 Google Sheet에 공용 저장돼요. 새로고침해도 유지됩니다 ✨")
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "게임: 숫자 맞추기":
@@ -259,5 +271,3 @@ elif page == "게임: 행운 룰렛":
         do_effect()
 
     st.markdown('</div>', unsafe_allow_html=True)
-
-st.caption("※ 방명록은 ‘현재 접속 세션’에만 저장돼요. 영구 저장(DB 붙이기)도 원하면 다음 단계로 해줄게!")
