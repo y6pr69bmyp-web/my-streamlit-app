@@ -95,7 +95,8 @@ if page == "홈":
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.write("### 💖 환영해!")
     st.write("- 왼쪽 메뉴에서 방명록이랑 게임을 골라서 놀 수 있어.")
-    st.write("- 동생한테 링크 보내면 윈도우에서도 바로 됨!")
+    st.write("- 주현준 바봉봉ㅋㅋ")
+    st.write("- 신기하제? 누나가 만들었디")
     st.write("#### 오늘의 한마디 ✨")
     msgs = [
         "대체로 행복하시길 바라요 💖",
