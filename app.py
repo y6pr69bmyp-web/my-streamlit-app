@@ -2,6 +2,9 @@ import streamlit as st
 import random
 from datetime import datetime
 
+import requests
+API_URL = "https://script.google.com/macros/s/AKfycbxRwDRRsmFb2hHJl43NlV3TiSWPu3UL6xhPdhvGnO1xPr3kiceEQx94riW9_apaZKwL/exec"
+
 st.set_page_config(page_title="Princess Arcade 💖", page_icon="👑", layout="centered")
 
 # ----------------- Style -----------------
@@ -110,38 +113,58 @@ if page == "홈":
 
 elif page == "방명록":
     st.markdown('<div class="card">', unsafe_allow_html=True)
-    st.write("### 📝 방명록 (세션 저장)")
+    st.write("### 📝 방명록 (공용 저장 · 새로고침해도 유지)")
+
     name = st.text_input("닉네임", placeholder="예: 정인/동생/친구")
     msg = st.text_area("남길 말", placeholder="한 줄 남겨줘 💕", height=90)
+
     col1, col2 = st.columns(2)
     with col1:
         add = st.button("💌 남기기", use_container_width=True)
     with col2:
-        clear = st.button("🧹 지우기(내 화면만)", use_container_width=True)
+        refresh = st.button("🔄 새로 불러오기", use_container_width=True)
 
+    # 글 남기기 (POST)
     if add:
         if name.strip() and msg.strip():
-            st.session_state.guestbook.insert(
-                0,
-                {"time": datetime.now().strftime("%m/%d %H:%M"), "name": name.strip(), "msg": msg.strip()}
-            )
-            st.success("남겼다! 💖")
-            do_effect()
+            payload = {
+                "time": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                "name": name.strip(),
+                "message": msg.strip()
+            }
+            try:
+                r = requests.post(API_URL, json=payload, timeout=10)
+                if r.text.strip().lower() == "ok":
+                    st.success("저장 완료 💖")
+                    do_effect()
+                else:
+                    st.warning(f"저장은 됐을 수도 있는데 응답이 이상해: {r.text[:120]}")
+            except Exception as e:
+                st.error(f"저장 실패: {e}")
         else:
             st.warning("닉네임이랑 메시지를 둘 다 써줘!")
-    if clear:
-        st.session_state.guestbook = []
-        st.info("현재 세션 방명록을 비웠어!")
 
     st.divider()
     st.write("#### 📌 최근 방명록")
-    if not st.session_state.guestbook:
-        st.caption("아직 아무도 안 남겼어… 첫 손님 가자 🐣")
-    else:
-        for item in st.session_state.guestbook[:20]:
-            st.markdown(f"**{item['name']}** · {item['time']}")
-            st.write(item["msg"])
-            st.markdown("---")
+
+    # 글 불러오기 (GET)
+    try:
+        data = requests.get(API_URL, timeout=10).json()
+        # 첫 줄은 헤더일 수 있어서 제외
+        rows = data[1:] if len(data) > 0 else []
+        rows = rows[::-1]  # 최신이 위로 오게
+        if not rows:
+            st.caption("아직 아무도 안 남겼어… 첫 손님 가자 🐣")
+        else:
+            for row in rows[:30]:
+                # row = [time, name, message]
+                t, n, m = (row + ["", "", ""])[:3]
+                st.markdown(f"**{n}** · {t}")
+                st.write(m)
+                st.markdown("---")
+    except Exception as e:
+        st.error(f"불러오기 실패: {e}")
+
     st.markdown('</div>', unsafe_allow_html=True)
 
 elif page == "게임: 숫자 맞추기":
